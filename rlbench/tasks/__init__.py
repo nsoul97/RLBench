@@ -115,6 +115,14 @@ from rlbench.tasks.put_books_at_shelf_location import PutBooksAtShelfLocation
 from rlbench.tasks.set_clock_to_time import SetClockToTime
 
 
+# pertubed version of tasks
+from rlbench.tasks.open_drawer_random_textures import OpenDrawerRandomTextures
+from rlbench.tasks.open_drawer_random_clrs import OpenDrawerRandomClrs
+from rlbench.tasks.open_drawer_random_frame_texture import OpenDrawerRandomFrameTexture
+from rlbench.tasks.open_drawer_random_frame_clr import OpenDrawerRandomFrameClr
+from rlbench.tasks.open_drawer_random_full_body_clr import OpenDrawerRandomFullBodyClr
+from rlbench.tasks.open_drawer_random_full_body_texture import OpenDrawerRandomFullBodyTexture
+
 FS10_V1 = {
     'train': [
         ReachTarget,

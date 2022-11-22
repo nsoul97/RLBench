@@ -33,6 +33,7 @@ setup(name='rlbench',
       url='https://www.doc.ic.ac.uk/~slj12',
       packages=[
             'rlbench',
+            'rlbench.action_modes',
             'rlbench.backend',
             'rlbench.tasks',
             'rlbench.task_ttms',
