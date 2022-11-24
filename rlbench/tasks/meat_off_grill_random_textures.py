@@ -22,8 +22,7 @@ class MeatOffGrillRandomTextures(Task):
         self._w1 = Dummy('waypoint1')
         self._w1z= self._w1.get_position()[2]
 
-        self._texture_dir = "/home/soul/Development/Stanford/Fall 2022/CS 330: Deep Multi-Task and Meta Learning/" \
-                            "Project/RLBench/tests/unit/assets/textures"
+        self._texture_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), os.pardir, "assets", "textures"))
         self._texture_files = os.listdir(self._texture_dir)
         self._grill_shape = Shape('grill_visual')
 

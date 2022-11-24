@@ -21,8 +21,7 @@ class TurnTapRandomFullBodyTexture(Task):
         self.left_joint = Joint('left_joint')
         self.right_joint = Joint('right_joint')
 
-        self._texture_dir = "/home/soul/Development/Stanford/Fall 2022/CS 330: Deep Multi-Task and Meta Learning/" \
-                            "Project/RLBench/tests/unit/assets/textures"
+        self._texture_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), os.pardir, "assets", "textures"))
         self._texture_files = os.listdir(self._texture_dir)
 
         self._obj_shapes = [Shape(obj_name) for obj_name in

@@ -35,8 +35,7 @@ class SlideBlockToColorTargetRandomBlockTexture(Task):
                 Dummy('point4e')]
         }
 
-        self._texture_dir = "/home/soul/Development/Stanford/Fall 2022/CS 330: Deep Multi-Task and Meta Learning/" \
-                            "Project/RLBench/tests/unit/assets/textures"
+        self._texture_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), os.pardir, "assets", "textures"))
         self._texture_files = os.listdir(self._texture_dir)
 
     def init_episode(self, index: int) -> List[str]:

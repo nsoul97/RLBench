@@ -14,8 +14,7 @@ class OpenDrawerRandomFullBodyTexture(Task):
 
     def init_task(self) -> None:
         self._options = ['bottom', 'middle', 'top']
-        self._texture_dir = "/home/soul/Development/Stanford/Fall 2022/CS 330: Deep Multi-Task and Meta Learning/" \
-                            "Project/RLBench/tests/unit/assets/textures"
+        self._texture_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), os.pardir, "assets", "textures"))
         self._texture_files = os.listdir(self._texture_dir)
 
         self._anchors = [Dummy('waypoint_anchor_%s' % opt)

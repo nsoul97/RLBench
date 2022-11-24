@@ -36,8 +36,7 @@ class SweepToDustpanOfSizeRandomFullBodyEntitiesTextures(Task):
         self._short_dustpan_shapes = [Shape(obj_name) for obj_name in ['dustpan_short', 'Dustpan_4', 'Dustpan_6']]
         self._dirt_shapes = [Shape(obj_name) for obj_name in ['dirt0', 'dirt1', 'dirt2', 'dirt3', 'dirt4']]
 
-        self._texture_dir = "/home/soul/Development/Stanford/Fall 2022/CS 330: Deep Multi-Task and Meta Learning/" \
-                            "Project/RLBench/tests/unit/assets/textures"
+        self._texture_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), os.pardir, "assets", "textures"))
         self._texture_files = os.listdir(self._texture_dir)
 
     def init_episode(self, index: int) -> List[str]:
