@@ -127,7 +127,7 @@ from rlbench.tasks.open_drawer_random_full_body_texture import OpenDrawerRandomF
 from rlbench.tasks.meat_off_grill_random_clrs import MeatOffGrillRandomClrs
 from rlbench.tasks.meat_off_grill_random_textures import MeatOffGrillRandomTextures
 from rlbench.tasks.meat_off_grill_random_full_body_clr import MeatOffGrillRandomFullBodyClr
-from rlbench.tasks.meat_off_grill_random_full_body_textures import MeatOffGrillRandomFullBodyTextures   # rename
+from rlbench.tasks.meat_off_grill_random_full_body_texture import MeatOffGrillRandomFullBodyTexture
 
 # perturbed versions of 'place_wine_at_rack_location' task
 from rlbench.tasks.place_wine_at_rack_location_random_clrs import PlaceWineAtRackLocationRandomClrs
