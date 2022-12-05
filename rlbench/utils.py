@@ -80,6 +80,8 @@ def get_stored_demos(amount: int, image_paths: bool, dataset_root: str,
         example_path = join(examples_path, example)
         with open(join(example_path, LOW_DIM_PICKLE), 'rb') as f:
             obs = pickle.load(f)
+        with open(join(example_path, VARIATION_DESCRIPTIONS), 'rb') as f:
+            descs = pickle.load(f)
 
         if variation_number == -1:
             with open(join(example_path, VARIATION_NUMBER), 'rb') as f:
@@ -114,6 +116,7 @@ def get_stored_demos(amount: int, image_paths: bool, dataset_root: str,
             raise RuntimeError('Broken dataset assumption')
 
         for i in range(num_steps):
+            obs[i].misc['descriptions'] = descs
             si = IMAGE_FORMAT % i
             if obs_config.left_shoulder_camera.rgb:
                 obs[i].left_shoulder_rgb = join(l_sh_rgb_f, si)
