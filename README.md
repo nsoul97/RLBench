@@ -1,70 +1,15 @@
-# RLBench: Robot Learning Benchmark [![Unit Tests](https://github.com/stepjam/RLBench/workflows/Unit%20Tests/badge.svg)](https://github.com/stepjam/RLBench/actions) [![Task Tests](https://github.com/stepjam/RLBench/workflows/Task%20Tests/badge.svg)](https://github.com/stepjam/RLBench/actions) [![Discord](https://img.shields.io/discord/694945190867370155.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/DXPCjmd)
+# Studying the Robustness of Transformer-based Imitation Learning to Domain Shift
 
-![task grid image missing](readme_files/task_grid.png)
+**As part of the final course project for CS330: Deep Multi-Task and Meta Learning, Fall 2022**
 
-## Modifications
- This is my fork of RLBench. Modifications include:
-- 6 new tasks, bug fixes, and extensions of existing tasks. See Appendix A in the [paper](https://peract.github.io/) for details.
-- Data generation also records if `ignore_collisions` was used with a waypoint for motion-planning. 
-- `data_generator.py` supports an "all_variations" setting that samples from all possible task variations. 
+**Authors: Nikos Soulounias, Avidesh Marajh, Sidhart Krishnan**
 
-I branched off `master` in Feb 2022, so this fork is not up to date with the latest changes in the official repo.
 
-## RLBench
 
-**RLBench** is an ambitious large-scale benchmark and learning environment 
-designed to facilitate research in a number of vision-guided manipulation
-research areas, including: reinforcement learning, imitation learning,
-multi-task learning, geometric computer vision, and in particular, 
-few-shot learning. [Click here for website and paper.](https://sites.google.com/corp/view/rlbench)
+This repo is based on the peract branch of [this RLBench fork](https://github.com/MohitShridhar/RLBench/tree/peract). We implement visual pertubations for the tasks 'open drawer', 'sweep to dustpan of size', 'place_wine_at_rack_location', 'slide_block_to_color_target', 'sweep_to_dustpan_of_size', 'turn_tap', which were used to train the PerAct agent.
 
-**Contents:**
-- [Announcements](#announcements)
-- [Install](#install)
-- [Running Headless](#running-headless)
-- [Getting Started](#getting-started)
-    - [Few-Shot Learning and Meta Learning](#few-shot-learning-and-meta-learning)
-    - [Reinforcement Learning](#reinforcement-learning)
-    - [Sim-to-Real](#sim-to-real)
-    - [Imitation Learning](#imitation-learning)
-    - [Multi-Task Learning](#multi-task-learning)
-    - [RLBench Gym](#rlbench-gym)
-    - [Swapping Arms](#swapping-arms)
-- [Tasks](#tasks)
-- [Task Building](#task-building)
-- [Gotchas!](#gotchas)
-- [Contributing](#contributing)
-- [Acknowledgements](#acknowledgements)
-- [Citation](#citation)
 
-## Announcements
-
-### 28 September, 2021
-
-- **Version 1.2.0 is currently under development!** Note: This release will cause code-breaking API changes. Changes include:
-  - Improved API for action modes; custom action modes now much easier.
-
-### 1 July, 2021
-
-- New instructions on headless GPU rendering [here](#running-headless)!
-
-### 8 September, 2020
-
-- New tutorial series on task creation [here](https://www.youtube.com/watch?v=bKaK_9O3v7Y&list=PLsffAlO5lBTRiBwnkw2-x0U7t6TrNCkfc)!
-
-### 1 April, 2020
-
-- We added a Discord channel to allow the RLBench community to help one another. Click the Discord badge above.
-
-### 28 January, 2020
-
-- RLBench has been accepted to RA-L with presentation at ICRA!
-- Ability to easily swap out arms added. [See here](#swapping-arms).
-
-### 17 December, 2019
-
-- Gym is now supported!
-
+Keep in mind, that the RLBench fork of the PerAct paper is not up to date with the latest changes in the official RLBnech repo, and therefore, neither is this repo.
 
 ## Install
 
@@ -83,319 +28,171 @@ pip install .
 
 And that's it!
 
-## Running Headless
+If you want to run the PerAct generalization experiments, follow the installation instruction in the [PerAct repo](https://github.com/peract/peract), but clone and install this RLBench repo instead.
 
-You can run RLBench headlessly with VirtualGL. VirtualGL is an open source toolkit that gives any Unix or Linux remote display software the ability to run OpenGL applications **with full 3D hardware acceleration**.
-First insure that you have the nVidia proprietary driver installed. I.e. you should get an output when running `nvidia-smi`. Now run the following commands:
-```bash
-sudo apt-get install xorg libxcb-randr0-dev libxrender-dev libxkbcommon-dev libxkbcommon-x11-0 libavcodec-dev libavformat-dev libswscale-dev
-sudo nvidia-xconfig -a --use-display-device=None --virtual=1280x1024
-# Install VirtualGL
-wget https://sourceforge.net/projects/virtualgl/files/2.5.2/virtualgl_2.5.2_amd64.deb/download -O virtualgl_2.5.2_amd64.deb
-sudo dpkg -i virtualgl*.deb
-rm virtualgl*.deb
-```
-You will now need to reboot, and then start the X server:
-```bash
-sudo reboot
-nohup sudo X &
-```
-Now we are good to go! To render the application with the first GPU, you can do the following:
-```bash
-export DISPLAY=:0.0
-python my_pyrep_app.py
-```
-To render with the second GPU, you will insetad set display as: `export DISPLAY=:0.1`, and so on.
-
-**Acknowledgement**: Special thanks to Boyuan Chen (UC Berkeley) for bringing VirtualGL to my attention!
-
-## Getting Started
-
-The benchmark places particular emphasis on few-shot learning and meta learning 
-due to breadth of tasks available, though it can be used in numerous ways. Before using RLBench, 
-checkout the [Gotchas](#gotchas) section.
-
-### Few-Shot Learning and Meta Learning
-
-We have created splits of tasks called 'Task Sets', which consist of a 
-collection of X training tasks and 5 tests tasks. Here X can be 10, 25, 50, or 95.
-For example, to work on the task set with 10 training tasks, we import `FS10_V1`:
-
-```python
-import numpy as np
-from rlbench.action_modes.action_mode import MoveArmThenGripper
-from rlbench.action_modes.arm_action_modes import JointVelocity
-from rlbench.action_modes.gripper_action_modes import Discrete
-from rlbench.environment import Environment
-from rlbench.tasks import FS10_V1
-
-action_mode = MoveArmThenGripper(
-  arm_action_mode=JointVelocity(),
-  gripper_action_mode=Discrete()
-)
-env = Environment(action_mode)
-env.launch()
-
-train_tasks = FS10_V1['train']
-test_tasks = FS10_V1['test']
-task_to_train = np.random.choice(train_tasks, 1)[0]
-task = env.get_task(task_to_train)
-task.sample_variation()  # random variation
-descriptions, obs = task.reset()
-obs, reward, terminate = task.step(np.random.normal(size=env.action_shape))
-```
-
-A full example can be seen in [examples/few_shot_rl.py](examples/few_shot_rl.py).
-
-### Reinforcement Learning
-
-```python
-import numpy as np
-from rlbench.action_modes.action_mode import MoveArmThenGripper
-from rlbench.action_modes.arm_action_modes import JointVelocity
-from rlbench.action_modes.gripper_action_modes import Discrete
-from rlbench.environment import Environment
-from rlbench.tasks import ReachTarget
-
-action_mode = MoveArmThenGripper(
-  arm_action_mode=JointVelocity(),
-  gripper_action_mode=Discrete()
-)
-env = Environment(action_mode)
-env.launch()
-
-task = env.get_task(ReachTarget)
-descriptions, obs = task.reset()
-obs, reward, terminate = task.step(np.random.normal(size=env.action_shape))
-```
-
-A full example can be seen in [examples/single_task_rl.py](examples/single_task_rl.py).
-If you would like to bootstrap from demonstrations, then take a look at [examples/single_task_rl_with_demos.py](examples/single_task_rl_with_demos.py).
-
-
-### Sim-to-Real
-
-```python
-import numpy as np
-from rlbench import Environment
-from rlbench import RandomizeEvery
-from rlbench import VisualRandomizationConfig
-from rlbench.action_modes.action_mode import MoveArmThenGripper
-from rlbench.action_modes.arm_action_modes import JointVelocity
-from rlbench.action_modes.gripper_action_modes import Discrete
-from rlbench.tasks import OpenDoor
-
-# We will borrow some from the tests dir
-rand_config = VisualRandomizationConfig(
-    image_directory='../tests/unit/assets/textures')
-
-action_mode = MoveArmThenGripper(
-  arm_action_mode=JointVelocity(),
-  gripper_action_mode=Discrete()
-)
-env = Environment(
-    action_mode, randomize_every=RandomizeEvery.EPISODE, 
-    frequency=1, visual_randomization_config=rand_config)
-
-env.launch()
-
-task = env.get_task(OpenDoor)
-descriptions, obs = task.reset()
-obs, reward, terminate = task.step(np.random.normal(size=env.action_shape))
-```
-
-A full example can be seen in [examples/single_task_rl_domain_randomization.py](examples/single_task_rl_domain_randomization.py).
-
-### Imitation Learning
-
-```python
-import numpy as np
-from rlbench.action_modes.action_mode import MoveArmThenGripper
-from rlbench.action_modes.arm_action_modes import JointVelocity
-from rlbench.action_modes.gripper_action_modes import Discrete
-from rlbench.environment import Environment
-from rlbench.tasks import ReachTarget
-
-# To use 'saved' demos, set the path below
-DATASET = 'PATH/TO/YOUR/DATASET'
-
-action_mode = MoveArmThenGripper(
-  arm_action_mode=JointVelocity(),
-  gripper_action_mode=Discrete()
-)
-env = Environment(action_mode, DATASET)
-env.launch()
-
-task = env.get_task(ReachTarget)
-
-demos = task.get_demos(2)  # -> List[List[Observation]]
-demos = np.array(demos).flatten()
-
-batch = np.random.choice(demos, replace=False)
-batch_images = [obs.left_shoulder_rgb for obs in batch]
-predicted_actions = predict_action(batch_images)
-ground_truth_actions = [obs.joint_velocities for obs in batch]
-loss = behaviour_cloning_loss(ground_truth_actions, predicted_actions)
+## Generating expert demonstrations
 
 ```
-
-A full example can be seen in [examples/imitation_learning.py](examples/imitation_learning.py).
-
-### Multi-Task Learning
-
-We have created splits of tasks called 'Task Sets', which consist of a 
-collection of X training tasks. Here X can be 15, 30, 55, or 100.
-For example, to work on the task set with 15 training tasks, we import `MT15_V1`:
-
-```python
-import numpy as np
-from rlbench.action_modes.action_mode import MoveArmThenGripper
-from rlbench.action_modes.arm_action_modes import JointVelocity
-from rlbench.action_modes.gripper_action_modes import Discrete
-from rlbench.environment import Environment
-from rlbench.tasks import MT15_V1
-
-action_mode = MoveArmThenGripper(
-  arm_action_mode=JointVelocity(),
-  gripper_action_mode=Discrete()
-)
-env = Environment(action_mode)
-env.launch()
-
-train_tasks = MT15_V1['train']
-task_to_train = np.random.choice(train_tasks, 1)[0]
-task = env.get_task(task_to_train)
-task.sample_variation()  # random variation
-descriptions, obs = task.reset()
-obs, reward, terminate = task.step(np.random.normal(size=env.action_shape))
+cd <install_dir>/RLBench/tools
+python dataset_generator.py --tasks=open_drawer \
+                            --save_path=$PERACT_ROOT/data/val \
+                            --image_size=128,128 \
+                            --renderer=opengl \
+                            --episodes_per_task=10 \
+                            --processes=1 \
+                            --all_variations=True
 ```
 
-A full example can be seen in [examples/multi_task_learning.py](examples/multi_task_learning.py).
+## Perturbed Tasks
+We implement color- and texture-perturbed tasks based on the following original tasks, which were used to train the PerAct agent:
 
-### RLBench Gym
+### Meat off grill
 
-RLBench is __Gym__ compatible! Ensure you have gym installed (`pip3 install gym`).
+#### original task
 
-Simply select your task of interest from [rlbench/tasks/](rlbench/tasks/), and
-then load the task by using the task name (e.g. 'reach_target') followed by
-the observation mode: 'state' or 'vision'.
+![meat_off_grill](https://user-images.githubusercontent.com/34735067/206891002-44dc13c5-3d78-4f29-8926-4f5a191ba047.png)
 
-```python
-import gym
-import rlbench.gym
+#### random colors: [meat_off_grill_random_clrs.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/meat_off_grill_random_clrs.py)
 
-env = gym.make('reach_target-state-v0')
-# Alternatively, for vision:
-# env = gym.make('reach_target-vision-v0')
+![meat_off_grill_random_clrs](https://user-images.githubusercontent.com/34735067/206891003-77fbd143-f6b7-4f0e-b21a-16269e623cea.png)
 
-training_steps = 120
-episode_length = 40
-for i in range(training_steps):
-    if i % episode_length == 0:
-        print('Reset Episode')
-        obs = env.reset()
-    obs, reward, terminate, _ = env.step(env.action_space.sample())
-    env.render()  # Note: rendering increases step time.
+#### random full body color: [meat_off_grill_random_full_body_clr.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/meat_off_grill_random_full_body_clr.py)
 
-print('Done')
-env.close()
-```
+![meat_off_grill_random_full_body_clr](https://user-images.githubusercontent.com/34735067/206891004-38e49d54-28bd-40dd-a829-75b1549254ac.png)
 
-A full example can be seen in [examples/rlbench_gym.py](examples/rlbench_gym.py).
+#### random full body texture: [meat_off_grill_random_full_body_texture.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/meat_off_grill_random_full_body_texture.py)
 
-### Swapping Arms
+![meat_off_grill_random_full_body_texture](https://user-images.githubusercontent.com/34735067/206891006-c4400d4f-63f0-432e-ba55-51cb7fd8b7f5.png)
 
-The default Franka Panda Arm _can_ be swapped out for another. This can be
-useful for those who have custom tasks or want to perform sim-to-real 
-experiments on the tasks. However, if you swap out the arm, then we can't 
-guarantee that the task will be solvable.
-For example, the Mico arm has a very small workspace in comparison to the
-Franka.
+#### random textures: [meat_off_grill_random_textures.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/meat_off_grill_random_textures.py)
 
-**For benchmarking, the arm should remain as the Franka Panda.**
+![meat_off_grill_random_textures](https://user-images.githubusercontent.com/34735067/206891007-cf0fdd52-0b4f-46b7-bdfe-0f0676d5ece8.png)
 
-Currently supported arms:
 
-- Franka Panda arm with Franka gripper `(franka)`
-- Mico arm with Mico gripper `(mico)`
-- Jaco arm with 3-finger Jaco gripper `(jaco)`
-- Sawyer arm with Baxter gripper `(sawyer)`
-- UR5 arm with Robotiq 85 gripper `(ur5)`
+### Open Drawer
 
-You can then swap out the arm using `robot_configuration`:
+#### original task
 
-```python
-env = Environment(action_mode=action_mode, robot_setup='sawyer')
-```
+![zoomed_open_drawer](https://user-images.githubusercontent.com/34735067/206886062-1bd51ceb-5f18-49a9-9e3c-fcc44a91cf5d.png)
 
-A full example (using the Sawyer) can be seen in [examples/swap_arm.py](examples/swap_arm.py).
+#### random colors: [open_drawer_random_clrs.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/open_drawer_random_clrs.py)
 
-_Don't see the arm that you want to use?_ Your first step is to make sure it is
-in PyRep, and if not, then you can follow the instructions for importing new
-arm on the PyRep GitHub page. After that, feel free to open an issue and 
-we can being it in to RLBench for you.
+![zoomed_open_drawer_random_clrs](https://user-images.githubusercontent.com/34735067/206886064-613a0efb-8913-4e1f-9b40-cff237cfc67d.png)
 
-## Tasks
+#### random frame color: [open_drawer_random_frame_clr.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/open_drawer_random_frame_clr.py) 
 
-To see a full list of all tasks, [see here](rlbench/tasks).
+![zoomed_open_drawer_random_frame_clr](https://user-images.githubusercontent.com/34735067/206886065-f2a38c9f-e829-4f25-a010-955ebd0d0767.png)
 
-To see gifs of each of the tasks, [see here](https://drive.google.com/drive/folders/1TqbulbbCEqVBd6SBHatphFlUK2JQLkYu?usp=sharing).
+#### random frame texture: [open_drawer_random_frame_texture.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/open_drawer_random_frame_texture.py) 
 
-## Task Building
+![zoomed_open_drawer_random_frame_texture](https://user-images.githubusercontent.com/34735067/206886066-f39b5c03-46bd-40c5-81d9-d56d9484cce6.png)
 
-The task building tool is the interface for users who wish to create new tasks 
-to be added to the RLBench task repository. Each task has 2 associated files: 
-a V-REP model file (_.ttm_), which holds all of the scene information and demo 
-waypoints, and a python (_.py_) file, which is responsible for wiring the 
-scene objects to the RLBench backend, applying variations, defining success
-criteria, and adding other more complex task behaviours.
+#### random full body color: [open_drawer_random_full_body_clr.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/open_drawer_random_full_body_clr.py)
 
-Video tutorial series [here](https://www.youtube.com/watch?v=bKaK_9O3v7Y&list=PLsffAlO5lBTRiBwnkw2-x0U7t6TrNCkfc)!
+![zoomed_open_drawer_random_full_body_clr](https://user-images.githubusercontent.com/34735067/206886068-01ca2d62-240c-40e0-a753-aacbf5527235.png)
 
-In-depth text tutorials:
-- [Simple Task](tutorials/simple_task.md)
-- [Complex Task](tutorials/complex_task.md)
+#### random full body texture [open_drawer_random_full_body_texture.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/open_drawer_random_full_body_texture.py)
 
-## Gotchas!
+![zoomed_open_drawer_random_full_body_texture](https://user-images.githubusercontent.com/34735067/206886070-a40f0f35-6d24-46c8-96ed-e3b570f08404.png)
 
-- **Using low-dimensional task observations (rather than images):** RLBench was designed to be challenging, putting emphasis on vision rather than 
-toy-based low dimensional inputs. Although each task does supply a low-dimensional
-output this should be used with extreme caution!
-    - Why? Imagine you are training a reinforcement learning agent to pick up a block; halfway through
-    training, the block slips from the gripper and falls of the table. These low-dimensional values
-    will now be out of distribution. I.e. RLBench does not safeguard against objects going out of the 
-    workspace. This issue does not arise when using image-based observations. 
-    
-- **Using non-standard image size:** RLBench by default uses image observation sizes of 128x128.
-When using an alternative size, be aware that you may need to collect your saved demonstrations again.
-    - Why? If we instead specify a 64x64 image observation size to the `ObservationConfig` then the
-    scene cameras will now render to that size. However, the saved demos on disk will now be **resized**
-    to be 64x64.
-    This resizing will of course mean that small artifacts may be present in stored demos
-    that may not be present in the 'live' observations from the scene. Instead, prefer to re-collect demos
-    using the image observation sized you plan to use in the 'live' environment.
-    
+#### random textures: [open_drawer_random_textures.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/open_drawer_random_textures.py)
 
-## Contributing
+![zoomed_open_drawer_random_textures](https://user-images.githubusercontent.com/34735067/206886071-5ca416d5-981f-4241-89f5-0ae32d9dcb2b.png)
 
-New tasks using our task building tool, in addition to bug fixes, are very 
-welcome! When building your task, please ensure that you run the task validator
-in the task building tool.
+### Place wine at rack location
 
-A full contribution guide is coming soon!
+#### original task
 
-## Acknowledgements
+![place_wine_at_rack_location](https://user-images.githubusercontent.com/34735067/206890195-925f5156-8e69-4df2-b5bf-3fc59bbd773a.png)
 
-Models were supplied from turbosquid.com, cgtrader.com, free3d.com, 
-thingiverse.com, and cadnav.com.
+#### random colors: [place_wine_at_rack_location_random_clrs.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/place_wine_at_rack_location_random_clrs.py)
 
-## Citation
+![place_wine_at_rack_location_random_clrs](https://user-images.githubusercontent.com/34735067/206890196-18686fdc-12f5-4d8a-9c9c-93815d1adf0a.png)
 
-```
-@article{james2019rlbench,
-  title={RLBench: The Robot Learning Benchmark \& Learning Environment},
-  author={James, Stephen and Ma, Zicong and Rovick Arrojo, David and Davison, Andrew J.},
-  journal={IEEE Robotics and Automation Letters},
-  year={2020}
-}
-```
+#### random full body colors: [place_wine_at_rack_location_random_full_body_bottle_rack_clrs.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/place_wine_at_rack_location_random_full_body_bottle_rack_clrs.py)
+
+![place_wine_at_rack_location_random_full_body_bottle_rack_clrs](https://user-images.githubusercontent.com/34735067/206890197-7d41dcf4-9a45-4625-8b37-45f263777e6a.png)
+
+#### random full body textures: [place_wine_at_rack_location_random_full_body_bottle_rack_textures.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/place_wine_at_rack_location_random_full_body_bottle_rack_textures.py)
+
+![place_wine_at_rack_location_random_full_body_bottle_rack_textures](https://user-images.githubusercontent.com/34735067/206890198-b371da07-c5a4-426f-9163-0c8babb2097f.png)
+
+#### random same full body color: [place_wine_at_rack_location_random_same_full_body_clr.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/place_wine_at_rack_location_random_same_full_body_clr.py)
+
+![place_wine_at_rack_location_random_same_full_body_clr](https://user-images.githubusercontent.com/34735067/206890199-ca75ace6-3cad-40db-a449-5c1954c9d9c7.png)
+
+#### random same full body texture:  [place_wine_at_rack_location_random_same_full_body_texture.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/place_wine_at_rack_location_random_same_full_body_texture.py)
+
+![place_wine_at_rack_location_random_same_full_body_texture](https://user-images.githubusercontent.com/34735067/206890200-f49829e8-e754-4b05-9dcc-4f954e741b81.png)
+
+#### random textures: [place_wine_at_rack_location_random_textures.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/place_wine_at_rack_location_random_textures.py)
+
+![place_wine_at_rack_location_random_textures](https://user-images.githubusercontent.com/34735067/206890202-b114e87c-d939-4631-accf-7dfb3694eb53.png)
+
+
+### Slide block to color target
+
+#### original task
+
+![slide_block_to_color_target](https://user-images.githubusercontent.com/34735067/206886883-ea7e7327-2fae-43f9-9133-c89bcd58f6a6.png)
+
+#### random block color: [slide_block_to_color_target_random_block_clr.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/slide_block_to_color_target_random_block_clr.py)
+
+![slide_block_to_color_target_random_block_clr](https://user-images.githubusercontent.com/34735067/206886884-dfd88528-6c2b-474e-92c8-4c0ae3fbcaa9.png)
+
+#### random block texture: [slide_block_to_color_target_random_block_texture.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/slide_block_to_color_target_random_block_texture.py)
+
+![slide_block_to_color_target_random_block_texture](https://user-images.githubusercontent.com/34735067/206886886-ba2ac015-9a29-4d4d-89b8-8afd0ba76a00.png)
+
+### Sweep to dustpan of size
+
+
+#### original task
+
+![sweep_to_dustpan_of_size](https://user-images.githubusercontent.com/34735067/206889607-bbcf4e64-192b-442f-92c0-739b9830c159.png)
+
+#### random colors: [sweep_to_dustpan_of_size_random_clrs.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/sweep_to_dustpan_of_size_random_clrs.py)
+
+![sweep_to_dustpan_of_size_random_clrs](https://user-images.githubusercontent.com/34735067/206889609-e7b42511-74d9-4452-b3f8-ae731d606b97.png)
+
+#### random full body colors: [sweep_to_dustpan_of_size_random_full_body_entities_clrs.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/sweep_to_dustpan_of_size_random_full_body_entities_clrs.py)
+
+![sweep_to_dustpan_of_size_random_full_body_entities_clrs](https://user-images.githubusercontent.com/34735067/206889610-3e074f00-ff23-4b5d-8758-20a5a4b47ed2.png)
+
+#### random full body textures: [sweep_to_dustpan_of_size_random_full_body_entities_textures.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/sweep_to_dustpan_of_size_random_full_body_entities_textures.py)
+
+![sweep_to_dustpan_of_size_random_full_body_entities_textures](https://user-images.githubusercontent.com/34735067/206889611-60bd89d8-cb75-4fd4-89f6-229742e622c3.png)
+
+#### random same full body color: [sweep_to_dustpan_of_size_random_same_full_body_clr.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/sweep_to_dustpan_of_size_random_same_full_body_clr.py)
+
+![sweep_to_dustpan_of_size_random_same_full_body_clr](https://user-images.githubusercontent.com/34735067/206889612-4e3ce070-5871-4e2a-880a-1a2874ba76b2.png)
+
+#### random same full body texture: [sweep_to_dustpan_of_size_random_same_full_body_texture.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/sweep_to_dustpan_of_size_random_same_full_body_texture.py)
+
+![sweep_to_dustpan_of_size_random_same_full_body_texture](https://user-images.githubusercontent.com/34735067/206889613-a6a7778f-a283-4947-9c4b-b7ab66e09626.png)
+
+#### random textures: [sweep_to_dustpan_of_size_random_textures.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/sweep_to_dustpan_of_size_random_textures.py)
+
+![sweep_to_dustpan_of_size_random_textures](https://user-images.githubusercontent.com/34735067/206889614-03cbd70b-707b-4cc7-bb6d-54cfb50bc88a.png)
+
+### Turn tap
+
+#### original task
+
+![turn_tap](https://user-images.githubusercontent.com/34735067/206885497-552d391b-8d79-4b85-9db9-be9da964b6da.png)
+
+#### random colors: [turn_tap_random_clrs.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/turn_tap_random_clrs.py)
+
+![turn_tap_random_clrs](https://user-images.githubusercontent.com/34735067/206885498-2ffd376b-72b8-4d86-ba0b-96e9571d1a79.png)
+
+#### random full body color: [turn_tap_random_full_body_clr.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/turn_tap_random_full_body_clr.py)
+
+![turn_tap_random_full_body_clr](https://user-images.githubusercontent.com/34735067/206885499-a76e4ba9-3cf7-49bb-879a-ec04906c5f8b.png)
+
+#### random textures: [turn_tap_random_textures.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/turn_tap_random_textures.py)
+
+![turn_tap_random_textures](https://user-images.githubusercontent.com/34735067/206885501-660b354a-6207-49da-b0c9-d5b64b243b7e.png)
+
+#### random full body texture: [turn_tap_random_full_body_texture.py](https://github.com/nsoul97/RLBench/blob/main/rlbench/tasks/turn_tap_random_full_body_texture.py)
+
+![turn_tap_random_full_body_texture](https://user-images.githubusercontent.com/34735067/206885500-85323dc1-4766-4591-9010-f77d76ef2bdb.png)
