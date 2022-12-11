@@ -4,7 +4,7 @@
 
 **Authors: Nikos Soulounias, Avidesh Marajh, Sidhart Krishnan**
 
-
+![Alt Text](https://github.com/nsoul97/RLBench/blob/main/figures/open_drawer_random_clrs.gif)
 
 This repo is based on the peract branch of [this RLBench fork](https://github.com/MohitShridhar/RLBench/tree/peract). We implement visual pertubations for the tasks 'open drawer', 'sweep to dustpan of size', 'place_wine_at_rack_location', 'slide_block_to_color_target', 'sweep_to_dustpan_of_size', 'turn_tap', which were used to train the PerAct agent.
 
